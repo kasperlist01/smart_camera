@@ -69,4 +69,4 @@ def encode_image(image):
 
 
 if __name__ == '__main__':
-    socketio.run(app, allow_unsafe_werkzeug=True, debug=True, host='0.0.0.0', port=5001)
+    socketio.run(app, allow_unsafe_werkzeug=True, debug=True, host='0.0.0.0', port=5000)
