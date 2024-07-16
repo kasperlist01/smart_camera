@@ -1,0 +1,7 @@
+video, #saveButton, canvas {
+    display: none;
+}
+
+#processedCanvas {
+    display: block;
+}
