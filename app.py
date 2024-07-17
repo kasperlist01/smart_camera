@@ -7,7 +7,6 @@ import base64
 import threading
 from queue import Queue
 from ultralytics import YOLO
-import ssl
 
 app = Flask(__name__, static_folder='static')
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -18,6 +17,7 @@ model = YOLO('yolov8n.pt')  # Загружаем модель YOLO здесь
 last_results = None  # Последние результаты для рисования рамок
 
 frame_queue = Queue(maxsize=10)  # Очередь для кадров
+
 
 @app.route('/')
 def index():
@@ -60,19 +60,19 @@ def decode_frame(data):
         if not data:
             print("Received empty frame data")
             return None
-        
+
         frame_data = base64.b64decode(data)
         buffer_array = np.frombuffer(frame_data, np.uint8)
-        
+
         if buffer_array.size == 0:
             print("Buffer array is empty")
             return None
-        
+
         frame = cv2.imdecode(buffer_array, cv2.IMREAD_COLOR)
-        
+
         if frame is None:
             print("Failed to decode frame")
-        
+
         return frame
     except Exception as e:
         print(f"Error decoding frame: {e}")
@@ -101,11 +101,11 @@ def draw_boxes(frame, results):
 
             # Рисуем прямоугольник
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            
+
             # Подписываем объект
             label = f"{class_name} ({confidence:.2f})"
             cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-        
+
         return frame
     except Exception as e:
         print(f"Error drawing boxes: {e}")
@@ -122,6 +122,4 @@ def encode_frame(frame):
 
 
 if __name__ == '__main__':
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain(certfile='cert.pem', keyfile='key.pem')
-    socketio.run(app, allow_unsafe_werkzeug=True, debug=True, host='0.0.0.0', port=5001, ssl_context=context)
+    socketio.run(app, allow_unsafe_werkzeug=True, debug=True, host='0.0.0.0', port=5001)

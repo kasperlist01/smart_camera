@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const socket = io.connect('https://192.168.3.37:5001');
+    const socket = io.connect('http://localhost:5001');
 
     socket.on('connect', function() {
         console.log("Socket connected successfully");
@@ -14,16 +14,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const context = canvas.getContext('2d');
     const detectionsDiv = document.getElementById('detections'); // Элемент для вывода детекций
     const startButton = document.getElementById('startButton');
-    const cameraSelect = document.getElementById('cameraSelect');
+    const switchCameraButton = document.getElementById('switchCameraButton');
     let localStream = null;
     let lastValidDetection = ""; // Хранение последнего действительного сообщения о детекциях
+    let currentCameraIndex = 0;
     let videoDevices = [];
-    let animationFrameId;
 
     startButton.onclick = async function() {
         if (!localStream) {
             try {
-                await getVideoDevices();
                 await startCamera();
                 sendFramePeriodically();
             } catch (error) {
@@ -34,58 +33,35 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    cameraSelect.onchange = async function() {
-        await switchCamera();
+    switchCameraButton.onclick = async function() {
+        currentCameraIndex = (currentCameraIndex + 1) % videoDevices.length;
+        await startCamera();
     };
-
-    async function getVideoDevices() {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        videoDevices = devices.filter(device => device.kind === 'videoinput');
-        cameraSelect.innerHTML = '';
-
-        videoDevices.forEach((device, index) => {
-            const option = document.createElement('option');
-            option.value = device.deviceId;
-            option.text = device.label || `Camera ${index + 1}`;
-            cameraSelect.appendChild(option);
-        });
-
-        if (videoDevices.length > 1) {
-            cameraSelect.style.display = 'block';
-        } else {
-            cameraSelect.style.display = 'none';
-        }
-
-        // Установите значение селектора камеры на заднюю камеру, если она доступна
-        const defaultCamera = videoDevices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('rear'));
-        if (defaultCamera) {
-            cameraSelect.value = defaultCamera.deviceId;
-        } else {
-            cameraSelect.value = videoDevices[0].deviceId; // В качестве запасного варианта используйте первую камеру
-        }
-    }
 
     async function startCamera() {
         if (localStream) {
             localStream.getTracks().forEach(track => track.stop());
         }
 
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        videoDevices = devices.filter(device => device.kind === 'videoinput');
+        
         if (videoDevices.length > 0) {
             const videoConstraints = {
-                deviceId: { exact: cameraSelect.value },
-                facingMode: 'environment' // Добавьте это, чтобы указать заднюю камеру
+                deviceId: { exact: videoDevices[currentCameraIndex].deviceId }
             };
             localStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
             video.srcObject = localStream;
             video.play();
+            
+            if (videoDevices.length > 1) {
+                switchCameraButton.style.display = 'block';
+            } else {
+                switchCameraButton.style.display = 'none';
+            }
         } else {
             alert('No camera found');
         }
-    }
-
-    async function switchCamera() {
-        stopVideoStream();
-        await startCamera();
     }
 
     function stopVideoStream() {
@@ -93,9 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
             localStream.getTracks().forEach(track => track.stop());
             localStream = null;
             video.srcObject = null;
-        }
-        if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
+            switchCameraButton.style.display = 'none';
         }
     }
 
@@ -106,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const data = canvas.toDataURL('image/jpeg').split(',')[1]; // Уменьшение качества JPEG
         socket.emit('send_frame', data);
-        animationFrameId = requestAnimationFrame(sendFramePeriodically);
+        requestAnimationFrame(sendFramePeriodically);
     }
 
     socket.on('receive_frame', function(data) {
