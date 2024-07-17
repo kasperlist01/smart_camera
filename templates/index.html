@@ -24,9 +24,11 @@
                         <video autoplay playsinline class="w-100 mb-3"></video>
                         <canvas class="w-100 mb-3" style="display: none;"></canvas>
                         <canvas id="processedCanvas" class="w-100"></canvas>
+                        <div id="detections" class="alert alert-info" role="alert" style="display:none;"></div>
                         <div class="text-center mt-3">
                             <button id="startButton" class="btn btn-primary">Start Camera</button>
-                            <button id="saveButton" class="btn btn-secondary" style="display: none;">Save Image</button>
+                            <select id="cameraSelect" class="form-control" style="display:none;"></select>
+                            <button id="saveButton" class="btn btn-secondary" style="display:none;">Save Image</button>
                         </div>
                     </div>
                 </div>
