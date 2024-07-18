@@ -1,58 +1,60 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
+import base64
+import io
+import os
+import random
+import ssl
 import numpy as np
 import cv2
-import base64
-import threading
-from queue import Queue
 from ultralytics import YOLO
 
 app = Flask(__name__, static_folder='static')
 socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app)
+ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+ssl_context.load_cert_chain('cert.pem', 'key.pem')
 
+model = YOLO('yolov8n.pt')  # Загружаем модель YOLO
 frame_counter = 0  # Глобальный счетчик кадров
-model = YOLO('yolov8n.pt')  # Загружаем модель YOLO здесь
-last_results = None  # Последние результаты для рисования рамок
-
-frame_queue = Queue(maxsize=10)  # Очередь для кадров
+object_coords = []  # Список для хранения координат объектов
 
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    dice_roll = random.randint(1, 6)  # Генерация случайного числа от 1 до 6
+    return render_template('index.html', dice_roll=dice_roll)
 
 
 @socketio.on('send_frame')
 def handle_frame(data):
-    global frame_counter, last_results
+    global frame_counter
+    print("Frame received")
     frame_counter += 1
-
-    frame = decode_frame(data)
-    if frame is not None:
-        frame_queue.put(frame)  # Добавляем кадр в очередь
-
-    if frame_counter % 7 == 0:  # Обрабатываем и отправляем сообщение только для каждого пятнадцатого кадра
-        threading.Thread(target=process_frame, args=(frame,)).start()
-
-
-def process_frame(frame):
-    global last_results
     try:
-        last_results = model(frame)[0]  # Обработка кадра моделью YOLO
-        message = summarize_results(last_results)
-        socketio.emit('receive_message', {'message': message})  # Отправляем сообщение о найденных объектах
+        processed_image = process_frame(data)
+        emit('receive_frame', {'image': processed_image})
+        print("Processed frame sent back to client")
     except Exception as e:
         print(f"Error processing frame: {e}")
-        last_results = None  # Обнуляем результаты в случае ошибки
 
-    while not frame_queue.empty():
-        frame = frame_queue.get()
-        if last_results:
-            frame = draw_boxes(frame, last_results)
-        encoded_frame = encode_frame(frame)
-        socketio.emit('receive_frame', {'image': encoded_frame})  # Отправляем изображение с рамками
+
+def process_frame(data):
+    global frame_counter, object_coords
+    try:
+        image_cv = decode_frame(data)
+        if image_cv is None:
+            raise ValueError("Failed to decode frame")
+
+        if frame_counter % 10 == 0:  # Каждый 10-й кадр
+            object_coords = detect_objects(image_cv)
+            print(f"Detected objects: {object_coords}")
+        image_cv = draw_boxes(image_cv, object_coords)
+        return encode_image(image_cv)
+    except Exception as e:
+        print(f"Error in process_frame: {e}")
+        raise
 
 
 def decode_frame(data):
@@ -79,47 +81,53 @@ def decode_frame(data):
         return None
 
 
-def summarize_results(results):
-    counts = {}
-    class_names = results.names  # Доступ к именам классов
-    for result in results.boxes:
-        class_name = class_names[int(result.cls)]
-        if class_name in counts:
-            counts[class_name] += 1
-        else:
-            counts[class_name] = 1
-    return ', '.join([f"{value} {key}(s)" for key, value in counts.items()])
-
-
-def draw_boxes(frame, results):
+def detect_objects(image):
     try:
+        results = model(image)[0]
+        coords = []
         for result in results.boxes:
-            coords = result.xyxy[0].tolist()  # Преобразование тензора в список
+            coords.append({
+                "coords": result.xyxy[0].tolist(),
+                "class_name": results.names[int(result.cls)],
+                "confidence": float(result.conf)
+            })
+        print(f"Detected coordinates: {coords}")
+        return coords
+    except Exception as e:
+        print(f"Error in detect_objects: {e}")
+        return []
+
+
+def draw_boxes(image, object_coords):
+    try:
+        for obj in object_coords:
+            coords = obj["coords"]
             x1, y1, x2, y2 = map(int, coords)
-            class_name = results.names[int(result.cls)]
-            confidence = float(result.conf)  # Преобразование тензора в скаляр
+            class_name = obj["class_name"]
+            confidence = obj["confidence"]
 
             # Рисуем прямоугольник
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
             # Подписываем объект
             label = f"{class_name} ({confidence:.2f})"
-            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.putText(image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-        return frame
+        print(f"Boxes drawn: {len(object_coords)}")
+        return image
     except Exception as e:
         print(f"Error drawing boxes: {e}")
-        return frame
+        return image
 
 
-def encode_frame(frame):
+def encode_image(image):
     try:
-        _, buffer = cv2.imencode('.jpg', frame)
+        _, buffer = cv2.imencode('.jpg', image)
         return base64.b64encode(buffer).decode('utf-8')
     except Exception as e:
-        print(f"Error encoding frame: {e}")
-        return None
+        print(f"Error encoding image: {e}")
+        raise
 
 
 if __name__ == '__main__':
-    socketio.run(app, allow_unsafe_werkzeug=True, debug=True, host='0.0.0.0', port=5001)
+    socketio.run(app,allow_unsafe_werkzeug=True, host='0.0.0.0', port=5003, debug=True, ssl_context=ssl_context)
