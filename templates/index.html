@@ -6,31 +6,28 @@
     <title>Video Stream Test</title>
     <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/static/css/style.css">
     <!-- Socket.io Script -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <!-- External JavaScript -->
     <script src="/static/js/app.js"></script>
-    <!-- <link rel="manifest" href="/static/manifest.json"> -->
 </head>
 <body>
-    <div class="container mt-5 mb-5"> <!-- Добавлен отступ снизу -->
+    <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-12 col-md-8">
-                <div class="card">
+                <div class="card shadow-lg">
                     <div class="card-body">
                         <h5 class="card-title text-center">Video Stream Test</h5>
                         <video autoplay playsinline muted class="w-100 mb-3"></video>
                         <canvas class="w-100 mb-3"></canvas>
-                        <canvas id="processedCanvas" class="w-100"></canvas>
+                        <canvas id="processedCanvas" class="w-100 mb-3"></canvas>
                         <div class="text-center mt-3">
-                            <button id="startButton" class="btn btn-primary">Start Camera</button>
-                            <button id="toggleButton" class="btn btn-secondary">Toggle Camera</button>
-                            <button id="saveButton" class="btn btn-secondary">Save Image</button>
-                        </div>
-                        <div class="text-center mt-3">
-                            <p>На кубике выпало: {{ dice_roll }}</p>
+                            <button id="startButton" class="btn btn-primary"><i class="fas fa-video"></i> Start Camera</button>
+                            <button id="toggleButton" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Toggle Camera</button>
                         </div>
                     </div>
                 </div>

@@ -2,16 +2,17 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import base64
-import io
 import os
 import random
 import ssl
 import numpy as np
 import cv2
 from ultralytics import YOLO
+from queue import Queue
+from threading import Thread
 
 app = Flask(__name__, static_folder='static')
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, async_mode='threading', cors_allowed_origins="*")
 CORS(app)
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 ssl_context.load_cert_chain('cert.pem', 'key.pem')
@@ -19,6 +20,15 @@ ssl_context.load_cert_chain('cert.pem', 'key.pem')
 model = YOLO('yolov8n.pt')  # Загружаем модель YOLO
 frame_counter = 0  # Глобальный счетчик кадров
 object_coords = []  # Список для хранения координат объектов
+frame_queue = Queue()  # Очередь кадров для обработки
+
+
+def frame_processor():
+    while True:
+        frame_data = frame_queue.get()
+        if frame_data is None:
+            break  # Завершаем поток, если получен None
+        handle_frame(frame_data)
 
 
 @app.route('/')
@@ -28,13 +38,17 @@ def index():
 
 
 @socketio.on('send_frame')
+def handle_frame_socket(data):
+    frame_queue.put(data)  # Добавляем кадр в очередь для обработки
+
+
 def handle_frame(data):
     global frame_counter
     print("Frame received")
     frame_counter += 1
     try:
         processed_image = process_frame(data)
-        emit('receive_frame', {'image': processed_image})
+        socketio.emit('receive_frame', {'image': processed_image}, namespace='/')
         print("Processed frame sent back to client")
     except Exception as e:
         print(f"Error processing frame: {e}")
@@ -130,4 +144,6 @@ def encode_image(image):
 
 
 if __name__ == '__main__':
-    socketio.run(app,allow_unsafe_werkzeug=True, host='0.0.0.0', port=5003, debug=True, ssl_context=ssl_context)
+    processor_thread = Thread(target=frame_processor)
+    processor_thread.start()
+    socketio.run(app, allow_unsafe_werkzeug=True, host='0.0.0.0', port=5003, debug=True, ssl_context=ssl_context)

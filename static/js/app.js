@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const processedContext = processedCanvas.getContext('2d');
     const startButton = document.getElementById('startButton');
     const toggleButton = document.getElementById('toggleButton');
-    const saveButton = document.getElementById('saveButton');
     let localStream = null;
     let usingFrontCamera = false; // Задняя камера по умолчанию
 
@@ -42,13 +41,9 @@ document.addEventListener('DOMContentLoaded', function () {
     toggleButton.onclick = function() {
         usingFrontCamera = !usingFrontCamera;
         if (localStream) {
-            stopVideoStream();
-            startCamera(usingFrontCamera);
+            startButton.click();  // Нажимаем кнопку "Start Camera" для остановки камеры
+            startButton.click();  // Нажимаем кнопку "Start Camera" снова для запуска камеры с другой стороны
         }
-    };
-
-    saveButton.onclick = function() {
-        saveImage();
     };
 
     async function startCamera(front) {
@@ -98,11 +93,4 @@ document.addEventListener('DOMContentLoaded', function () {
         };
         img.src = 'data:image/jpeg;base64,' + data.image;
     });
-
-    function saveImage() {
-        const link = document.createElement('a');
-        link.download = 'processed_image.jpeg';
-        link.href = processedCanvas.toDataURL('image/jpeg');
-        link.click();
-    }
 });

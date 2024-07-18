@@ -1,12 +1,35 @@
-video, canvas, #toggleButton {
+body, html {
+    overflow-x: hidden; /* Запрет горизонтальной прокрутки */
+    touch-action: manipulation; /* Запрет масштабирования */
+    background-color: #f8f9fa; /* Светлый фон */
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.card-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+button {
+    width: 150px;
+    margin: 5px;
+}
+
+video, canvas {
     display: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 #processedCanvas {
     display: block;
 }
 
-body, html {
-    overflow-x: hidden; /* Запрет горизонтальной прокрутки */
-    touch-action: manipulation; /* Запрет масштабирования */
+.mt-5 {
+    margin-top: 5rem !important;
 }
