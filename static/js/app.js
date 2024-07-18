@@ -29,12 +29,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 await startCamera(usingFrontCamera);
                 console.log("Camera access granted");
                 sendFramePeriodically();
+                startButton.innerHTML = '<i class="fas fa-video"></i> Stop Camera'; // Изменение надписи на кнопке
             } catch (error) {
                 console.error("Failed to get video stream:", error);
                 alert('Failed to get video stream. Please ensure the camera is connected and allowed.');
             }
         } else {
             stopVideoStream();
+            startButton.innerHTML = '<i class="fas fa-video"></i> Start Camera'; // Изменение надписи на кнопке
+            clearCanvas();
         }
     };
 
@@ -66,12 +69,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function clearCanvas() {
+        processedContext.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
+    }
+
     function sendFramePeriodically() {
         if (video.paused || video.ended || !localStream) return;
         canvas.width = video.videoWidth; // Уменьшение разрешения
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const data = canvas.toDataURL('image/jpeg', 0.8).split(',')[1]; // Уменьшение качества JPEG
+        const data = canvas.toDataURL('image/jpeg', 0.2).split(',')[1]; // Уменьшение качества JPEG
         console.log("Sending frame to server");
         socket.emit('send_frame', data);
         requestAnimationFrame(sendFramePeriodically);

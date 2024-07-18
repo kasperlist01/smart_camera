@@ -1,9 +1,7 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import base64
-import os
-import random
 import ssl
 import numpy as np
 import cv2
@@ -19,52 +17,70 @@ ssl_context.load_cert_chain('cert.pem', 'key.pem')
 
 model = YOLO('yolov8n.pt')  # Загружаем модель YOLO
 frame_counter = 0  # Глобальный счетчик кадров
-object_coords = []  # Список для хранения координат объектов
-frame_queue = Queue()  # Очередь кадров для обработки
+object_coords = {}  # Словарь для хранения координат объектов для каждого пользователя
+frame_queues = {}  # Словарь очередей кадров для каждого пользователя
 
 
-def frame_processor():
+def frame_processor(socket_id):
     while True:
-        frame_data = frame_queue.get()
+        frame_data = frame_queues[socket_id].get()
         if frame_data is None:
             break  # Завершаем поток, если получен None
-        handle_frame(frame_data)
+        handle_frame(socket_id, frame_data)
 
 
 @app.route('/')
 def index():
-    dice_roll = random.randint(1, 6)  # Генерация случайного числа от 1 до 6
-    return render_template('index.html', dice_roll=dice_roll)
+    return render_template('index.html')
+
+
+@socketio.on('connect')
+def handle_connect(auth):  # Добавьте параметр 'auth'
+    socket_id = request.sid
+    print(f"Client connected: {socket_id}")
+    frame_queues[socket_id] = Queue()
+    object_coords[socket_id] = []
+    processor_thread = Thread(target=frame_processor, args=(socket_id,))
+    processor_thread.start()
+
+@socketio.on('disconnect')
+def handle_disconnect(auth):  # Добавьте параметр 'auth'
+    socket_id = request.sid
+    print(f"Client disconnected: {socket_id}")
+    frame_queues[socket_id].put(None)
+    del frame_queues[socket_id]
+    del object_coords[socket_id]
 
 
 @socketio.on('send_frame')
 def handle_frame_socket(data):
-    frame_queue.put(data)  # Добавляем кадр в очередь для обработки
+    socket_id = request.sid
+    frame_queues[socket_id].put(data)  # Добавляем кадр в очередь для обработки
 
 
-def handle_frame(data):
+def handle_frame(socket_id, data):
     global frame_counter
-    print("Frame received")
+    print(f"Frame received from {socket_id}")
     frame_counter += 1
     try:
-        processed_image = process_frame(data)
-        socketio.emit('receive_frame', {'image': processed_image}, namespace='/')
-        print("Processed frame sent back to client")
+        processed_image = process_frame(socket_id, data)
+        socketio.emit('receive_frame', {'image': processed_image}, to=socket_id)
+        print(f"Processed frame sent back to client {socket_id}")
     except Exception as e:
         print(f"Error processing frame: {e}")
 
 
-def process_frame(data):
-    global frame_counter, object_coords
+def process_frame(socket_id, data):
+    global frame_counter
     try:
         image_cv = decode_frame(data)
         if image_cv is None:
             raise ValueError("Failed to decode frame")
 
         if frame_counter % 10 == 0:  # Каждый 10-й кадр
-            object_coords = detect_objects(image_cv)
-            print(f"Detected objects: {object_coords}")
-        image_cv = draw_boxes(image_cv, object_coords)
+            object_coords[socket_id] = detect_objects(image_cv)
+            print(f"Detected objects for {socket_id}: {object_coords[socket_id]}")
+        image_cv = draw_boxes(image_cv, object_coords[socket_id])
         return encode_image(image_cv)
     except Exception as e:
         print(f"Error in process_frame: {e}")
@@ -144,6 +160,4 @@ def encode_image(image):
 
 
 if __name__ == '__main__':
-    processor_thread = Thread(target=frame_processor)
-    processor_thread.start()
     socketio.run(app, allow_unsafe_werkzeug=True, host='0.0.0.0', port=5003, debug=True, ssl_context=ssl_context)
