@@ -8,7 +8,6 @@ import cv2
 from ultralytics import YOLO
 from queue import Queue
 from threading import Thread
-from PIL import Image, ImageDraw, ImageFont
 from translations import translations  # Импортируем словарь переводов
 
 app = Flask(__name__, static_folder='static')
@@ -18,8 +17,8 @@ ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 ssl_context.load_cert_chain('cert.pem', 'key.pem')
 
 # Загружаем модели YOLO
-model_2 = YOLO('yolov8n.pt')
 model_1 = YOLO('./train5_n_60/weights/best.pt')
+model_2 = YOLO('yolov8n.pt')
 frame_counters = {}  # Глобальный счетчик кадров для каждого клиента
 object_coords = {}  # Словарь для хранения координат объектов для каждого пользователя
 frame_queues = {}  # Словарь очередей кадров для каждого пользователя
