@@ -1,13 +1,15 @@
-# Используем базовый образ Ubuntu
-FROM ubuntu:latest
+# Используем минимальный базовый образ
+FROM python:3.10-slim-buster
 
 # Устанавливаем необходимые пакеты
 RUN apt-get update && apt-get install -y \
-    python3-pip \
-    python3-dev \
     libopencv-dev \
-    python3-opencv \
-    python3-venv
+    gcc \
+    g++ \
+    python3-dev \
+    python3-pip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Создаем рабочую директорию
 WORKDIR /app
@@ -15,10 +17,8 @@ WORKDIR /app
 # Копируем файл requirements.txt в контейнер
 COPY requirements.txt /app/
 
-# Создаем виртуальное окружение и устанавливаем зависимости
-RUN python3 -m venv venv && \
-    . venv/bin/activate && \
-    pip install --upgrade pip && \
+# Устанавливаем зависимости из файла requirements.txt
+RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
 # Копируем исходный код в контейнер
@@ -28,4 +28,4 @@ COPY . /app
 EXPOSE 5003
 
 # Запускаем приложение
-CMD ["/bin/bash", "-c", ". /app/venv/bin/activate && python app.py"]
+CMD ["python", "app.py"]

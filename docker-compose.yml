@@ -9,4 +9,9 @@ services:
       - .:/app
     environment:
       - FLASK_ENV=development
-    command: /bin/bash -c ". /app/venv/bin/activate && python app.py"
+    command: python app.py
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 6g
