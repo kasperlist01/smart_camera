@@ -35,7 +35,7 @@ def index():
 
 
 @socketio.on('connect')
-def handle_connect(auth):  # Добавьте параметр 'auth'
+def handle_connect(auth):
     socket_id = request.sid
     print(f"Client connected: {socket_id}")
     frame_queues[socket_id] = Queue()
@@ -44,7 +44,7 @@ def handle_connect(auth):  # Добавьте параметр 'auth'
     processor_thread.start()
 
 @socketio.on('disconnect')
-def handle_disconnect(auth):  # Добавьте параметр 'auth'
+def handle_disconnect(auth):
     socket_id = request.sid
     print(f"Client disconnected: {socket_id}")
     frame_queues[socket_id].put(None)
@@ -55,7 +55,7 @@ def handle_disconnect(auth):  # Добавьте параметр 'auth'
 @socketio.on('send_frame')
 def handle_frame_socket(data):
     socket_id = request.sid
-    frame_queues[socket_id].put(data)  # Добавляем кадр в очередь для обработки
+    frame_queues[socket_id].put(data)
 
 
 def handle_frame(socket_id, data):

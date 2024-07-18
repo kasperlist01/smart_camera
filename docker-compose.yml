@@ -4,8 +4,9 @@ services:
   web:
     build: .
     ports:
-      - "5001:5000"
+      - "5003:5003"
     volumes:
       - .:/app
     environment:
       - FLASK_ENV=development
+    command: /bin/bash -c ". /app/venv/bin/activate && python app.py"

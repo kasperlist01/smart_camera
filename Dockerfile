@@ -1,22 +1,31 @@
-# Используем официальный образ Python в качестве базового
-FROM python:3.12-slim
+# Используем базовый образ Ubuntu
+FROM ubuntu:latest
 
-# Устанавливаем зависимости
+# Устанавливаем необходимые пакеты
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpcre3-dev
+    python3-pip \
+    python3-dev \
+    libopencv-dev \
+    python3-opencv \
+    python3-venv
 
 # Создаем рабочую директорию
 WORKDIR /app
 
-# Копируем файлы приложения в контейнер
+# Копируем файл requirements.txt в контейнер
+COPY requirements.txt /app/
+
+# Создаем виртуальное окружение и устанавливаем зависимости
+RUN python3 -m venv venv && \
+    . venv/bin/activate && \
+    pip install --upgrade pip && \
+    pip install -r requirements.txt
+
+# Копируем исходный код в контейнер
 COPY . /app
 
-# Устанавливаем зависимости приложения
-RUN pip install --no-cache-dir -r requirements.txt
+# Открываем порт, используемый Flask (5003)
+EXPOSE 5003
 
-# Открываем порт для Flask
-EXPOSE 5000
-
-# Запуск приложения Flask
-CMD ["python", "app.py"]
+# Запускаем приложение
+CMD ["/bin/bash", "-c", ". /app/venv/bin/activate && python app.py"]

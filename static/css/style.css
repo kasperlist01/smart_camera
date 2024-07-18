@@ -4,6 +4,11 @@ body, html {
     background-color: #f8f9fa; /* Светлый фон */
 }
 
+header, footer {
+    text-align: center;
+    color: white;
+}
+
 .card {
     border: none;
     border-radius: 15px;
