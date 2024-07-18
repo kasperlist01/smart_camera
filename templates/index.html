@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Stream Test</title>
+    <title>Stream Camera</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
@@ -11,36 +11,47 @@
     <script src="/static/js/app.js"></script>
 </head>
 <body>
-    <header class="bg-primary py-3">
-        <div class="container">
-            <h1 class="text-white text-center">Smart Camera</h1>
-        </div>
-    </header>
+    <div class="d-flex flex-column min-vh-100">
+<!--        <header class="bg-primary py-3">-->
+<!--            <div class="container">-->
+<!--                <h1 class="text-white text-center">Smart Camera</h1>-->
+<!--            </div>-->
+<!--        </header>-->
 
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-8">
-                <div class="card shadow-lg">
-                    <div class="card-body">
-                        <h5 class="card-title text-center">Video Stream Test</h5>
-                        <video autoplay playsinline muted class="w-100 mb-3"></video>
-                        <canvas class="w-100 mb-3"></canvas>
-                        <canvas id="processedCanvas" class="w-100 mb-3"></canvas>
-                        <div class="text-center mt-3">
-                            <button id="startButton" class="btn btn-primary"><i class="fas fa-video"></i> Start Camera</button>
-                            <button id="toggleButton" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Toggle Camera</button>
+        <div class="container mt-5 flex-grow-1">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-8">
+                    <div class="card shadow-lg">
+                        <div class="card-body">
+                            <h5 class="card-title text-center">Stream Camera</h5>
+                            <video autoplay playsinline muted class="w-100 mb-3"></video>
+                            <canvas class="w-100 mb-3"></canvas>
+                            <canvas id="processedCanvas" class="w-100 mb-3"></canvas>
+                            <div class="text-center mt-3">
+                                <button id="startButton" class="btn btn-primary"><i class="fas fa-video"></i> Включить камеру</button>
+                                <button id="toggleButton" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Переключить камеру</button>
+                            </div>
+                            <div class="text-center mt-3">
+                                <label for="modelSelect" class="form-label">Выберите модель:</label>
+                                <select id="modelSelect" class="form-select">
+                                    <option value="model_1">Кубики</option>
+                                    <option value="model_2">Все объекты</option>
+                                </select>
+                            </div>
+                            <div id="detectionResults" class="mt-3 text-center"></div>
+                            <div id="translatedResults" class="mt-3 text-center"></div> <!-- Блок для отображения переведенных результатов -->
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <footer class="bg-dark py-3 mt-5">
-        <div class="container">
-            <p class="text-white text-center m-0">© 2024 Video Stream, Inc.</p>
-        </div>
-    </footer>
+<!--        <footer class="bg-dark py-3 mt-5">-->
+<!--            <div class="container">-->
+<!--                <p class="text-white text-center m-0">© 2024 Video Stream, Inc.</p>-->
+<!--            </div>-->
+<!--        </footer>-->
+    </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>

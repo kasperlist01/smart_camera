@@ -19,8 +19,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const processedContext = processedCanvas.getContext('2d');
     const startButton = document.getElementById('startButton');
     const toggleButton = document.getElementById('toggleButton');
+    const modelSelect = document.getElementById('modelSelect');
+    const detectionResults = document.getElementById('detectionResults'); // Элемент для отображения результатов
+    const translatedResults = document.getElementById('translatedResults'); // Элемент для отображения переведенных результатов
     let localStream = null;
     let usingFrontCamera = false; // Задняя камера по умолчанию
+    let lastDetections = []; // Хранение последних детекций
+    let detectionTimeout; // Таймаут для очистки старых детекций
 
     startButton.onclick = async function() {
         if (!localStream) {
@@ -29,14 +34,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 await startCamera(usingFrontCamera);
                 console.log("Camera access granted");
                 sendFramePeriodically();
-                startButton.innerHTML = '<i class="fas fa-video"></i> Stop Camera'; // Изменение надписи на кнопке
+                startButton.innerHTML = '<i class="fas fa-video"></i> Выключить камеру'; // Изменение надписи на кнопке
             } catch (error) {
                 console.error("Failed to get video stream:", error);
                 alert('Failed to get video stream. Please ensure the camera is connected and allowed.');
             }
         } else {
             stopVideoStream();
-            startButton.innerHTML = '<i class="fas fa-video"></i> Start Camera'; // Изменение надписи на кнопке
+            startButton.innerHTML = '<i class="fas fa-video"></i> Включить камеру'; // Изменение надписи на кнопке
             clearCanvas();
         }
     };
@@ -47,6 +52,12 @@ document.addEventListener('DOMContentLoaded', function () {
             startButton.click();  // Нажимаем кнопку "Start Camera" для остановки камеры
             startButton.click();  // Нажимаем кнопку "Start Camera" снова для запуска камеры с другой стороны
         }
+    };
+
+    modelSelect.onchange = function() {
+        const selectedModel = modelSelect.value;
+        console.log("Selected model:", selectedModel);
+        socket.emit('set_model', { model_type: selectedModel });
     };
 
     async function startCamera(front) {
@@ -71,6 +82,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function clearCanvas() {
         processedContext.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
+        detectionResults.innerHTML = ''; // Очистка результатов
+        translatedResults.innerHTML = ''; // Очистка переведенных результатов
+        lastDetections = []; // Сброс последних детекций
+        if (detectionTimeout) clearTimeout(detectionTimeout);
     }
 
     function sendFramePeriodically() {
@@ -99,5 +114,40 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error("Error loading the processed image.");
         };
         img.src = 'data:image/jpeg;base64,' + data.image;
+        updateDetectionResults(data.detections); // Обновление результатов
     });
+
+    function updateDetectionResults(detections) {
+        if (detections && detections.length > 0) {
+            lastDetections = detections; // Обновляем последние детекции
+            if (detectionTimeout) clearTimeout(detectionTimeout); // Очищаем предыдущий таймаут
+            detectionTimeout = setTimeout(() => {
+                lastDetections = []; // Очищаем детекции после 2 секунд
+                detectionResults.innerHTML = '';
+                translatedResults.innerHTML = '';
+            }, 2000);
+        }
+
+        detectionResults.innerHTML = ''; // Очистка предыдущих результатов
+        if (lastDetections.length === 0) {
+            detectionResults.innerHTML = '';
+            translatedResults.innerHTML = '';
+            return;
+        }
+
+        const leftColumn = document.createElement('ul');
+        const rightColumn = document.createElement('ul');
+        lastDetections.forEach((detection, index) => {
+            const listItem = document.createElement('li');
+            listItem.textContent = `${detection.translated_class_name || detection.class_name} (${(detection.confidence * 100).toFixed(2)}%)`;
+            if (index % 2 === 0) {
+                leftColumn.appendChild(listItem);
+            } else {
+                rightColumn.appendChild(listItem);
+            }
+        });
+
+        detectionResults.appendChild(leftColumn);
+        detectionResults.appendChild(rightColumn);
+    }
 });

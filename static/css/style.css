@@ -2,6 +2,7 @@ body, html {
     overflow-x: hidden; /* Запрет горизонтальной прокрутки */
     touch-action: manipulation; /* Запрет масштабирования */
     background-color: #f8f9fa; /* Светлый фон */
+    height: 100%; /* Высота для Flexbox */
 }
 
 header, footer {
@@ -37,4 +38,30 @@ video, canvas {
 
 .mt-5 {
     margin-top: 5rem !important;
+}
+
+.flex-grow-1 {
+    flex-grow: 1;
+}
+
+#detectionResults {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Две колонки одинаковой ширины */
+    gap: 10px; /* Расстояние между колонками */
+}
+
+#detectionResults ul {
+    list-style: none; /* Убираем маркеры */
+    padding: 0;
+    margin: 0;
+}
+
+#detectionResults li {
+    background: #e9ecef; /* Светлый фон для элементов списка */
+    padding: 5px;
+    border-radius: 5px;
+}
+
+#translatedResults {
+    margin-top: 20px;
 }
