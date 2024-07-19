@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import base64
@@ -35,6 +35,12 @@ def frame_processor(socket_id):
             print(f"Model type for {socket_id} set to {model_types[socket_id]}")
         else:
             handle_frame(socket_id, frame_data)
+
+
+# Маршрут для отдачи файла манифеста
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('.', 'manifest.json')
 
 
 @app.route('/')
@@ -181,7 +187,8 @@ def draw_boxes(image, object_coords):
                 text_y = y1 + 20  # Если мало места сверху, ставим текст под прямоугольником
 
             # Рисуем фон для текста, чтобы улучшить читаемость
-            cv2.rectangle(image, (text_x, text_y - text_size[1] - 4), (text_x + text_size[0], text_y), (255, 255, 255), -1)
+            cv2.rectangle(image, (text_x, text_y - text_size[1] - 4), (text_x + text_size[0], text_y), (255, 255, 255),
+                          -1)
 
             # Добавляем текст на изображение
             cv2.putText(image, label, (text_x, text_y - 2), font, font_scale, (0, 0, 0), thickness, cv2.LINE_AA)
@@ -190,6 +197,7 @@ def draw_boxes(image, object_coords):
     except Exception as e:
         print(f"Error drawing boxes: {e}")
         return image
+
 
 def encode_image(image):
     try:

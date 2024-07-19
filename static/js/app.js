@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const socket = io('https://192.168.3.38:5003', {
+    const socket = io('https://172.20.10.3:5003', {
         transports: ['websocket', 'polling'],
         path: '/socket.io'
     });
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
         canvas.width = video.videoWidth; // Уменьшение разрешения
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const data = canvas.toDataURL('image/jpeg', 0.8).split(',')[1]; // Уменьшение качества JPEG
+        const data = canvas.toDataURL('image/jpeg').split(',')[1]; // Уменьшение качества JPEG
         console.log("Sending frame to server");
         socket.emit('send_frame', data);
         requestAnimationFrame(sendFramePeriodically);
